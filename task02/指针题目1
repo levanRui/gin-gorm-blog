@@ -1,0 +1,12 @@
+func pinFunc(p *int) {
+	//num :=10
+	changeNum := *p + 10
+	fmt.Println(changeNum)
+
+}
+func main() {
+	num := 10
+	p := &num
+	pinFunc(p)
+
+}
