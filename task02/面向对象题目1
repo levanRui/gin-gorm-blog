@@ -1,0 +1,49 @@
+package main
+
+import "fmt"
+
+type Shape interface {
+	Area() int
+	Perimeter() int
+}
+type Rectangle struct {
+	a int
+	b int
+}
+
+// Rectangle结构体实现Shape接口的Area方法
+func (r *Rectangle) Area() int {
+	return r.a * r.b
+}
+
+// Rectangle结构体实现Shape接口的Perimeter方法
+func (r *Rectangle) Perimeter() int {
+	return (r.a + r.b) * 2
+}
+
+type Circle struct {
+	c int
+}
+
+// Circle结构体实现Shape接口的Area方法
+func (c1 *Circle) Area() int {
+	return c1.c * 4
+}
+
+// Circle结构体实现Shape接口的Perimeter方法
+func (c1 *Circle) Perimeter() int {
+	return c1.c * c1.c
+}
+func main() {
+	rectangle := &Rectangle{a: 2, b: 5}
+	circle := &Circle{c: 5}
+	rectangleP := Shape.Perimeter(rectangle)
+	rectangleA := Shape.Area(rectangle)
+	fmt.Println("矩形的周长：%d\n", rectangleP)
+	fmt.Println("矩形的面积：%d\n", rectangleA)
+
+	circleP := Shape.Perimeter(circle)
+	circleA := Shape.Area(circle)
+	fmt.Println("圆的周长：%d\n", circleP)
+	fmt.Println("圆的面积：%d\n", circleA)
+}
