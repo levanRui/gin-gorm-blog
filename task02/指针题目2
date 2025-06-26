@@ -1,0 +1,15 @@
+func pinFunc(slicePin *[]int) {
+	dataArr := *slicePin
+	for i := 0; i < len(dataArr); i++ {
+		dataArr[i] = dataArr[i] * 2
+	}
+	slicePin = &dataArr
+	fmt.Println(slicePin)
+
+}
+func main() {
+	num := []int{2, 5, 8, 10}
+	p := &num
+	pinFunc(p)
+
+}
