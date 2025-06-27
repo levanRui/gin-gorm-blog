@@ -1,0 +1,26 @@
+package main
+
+import "fmt"
+
+type Person struct {
+	Name string
+	Age  int
+}
+type Employee struct {
+	EmployeeID int
+	Person
+}
+
+func (employee Employee) PrintInfo() {
+	fmt.Println("员工编号：", employee.EmployeeID)
+	fmt.Println("员工名称：", employee.Person.Name)
+	fmt.Println("员工年龄：", employee.Person.Age)
+
+}
+func main() {
+	emp := Employee{
+		EmployeeID: 23,
+		Person:     Person{Name: "阿乐", Age: 31},
+	}
+	emp.PrintInfo()
+}
