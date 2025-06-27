@@ -1,0 +1,49 @@
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+// 1.定义数据发送方法
+func sendData(channel chan<- int) {
+	for i := 1; i <= 100; i++ {
+		channel <- i //i赋值给channel
+		fmt.Println("sendData发送数据: %d\n", i)
+	}
+	close(channel)
+}
+
+// 2.定义数据接受方法
+func receiveData(ch <-chan int) {
+	for value := range ch {
+		fmt.Println("receiveData接受数据: %d\n", value)
+	}
+}
+func main() {
+	// 1.创建带有缓冲的channel
+	channel := make(chan int, 5)
+	// 2.启动goroutine发送协程--发送数据
+	go sendData(channel)
+	// 3.启动goroutine接受协程-接受数据
+	// 4.采用select多路复用
+	timeout := time.After(2 * time.Second)
+	for {
+		select {
+		case value, ok := <-channel:
+			if !ok {
+				fmt.Println("channel已关闭！")
+				return
+			}
+			fmt.Println("主goroutine接受数据：%d\n", value)
+		case <-timeout:
+			fmt.Println("操作超时")
+
+			return
+		default:
+			fmt.Println("没有数据，请等待......")
+			time.Sleep(500 * time.Microsecond)
+		}
+
+	}
+}
