@@ -1,0 +1,45 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/learn/samle-go/gorm/constant"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+type Book struct {
+	ID     uint
+	Title  string
+	Author string
+	Price  string
+}
+type books struct {
+	ID     uint    `gorm:"primaryKey"`
+	Title  string  `gorm:"column:title"`
+	Author string  `gorm:"column:author"`
+	Price  float64 `gorm:"column:price"`
+}
+
+func main() {
+	// 初始化数据库
+	//dbConn := connectDb.InitDB(constant.DBPATH, &books{})
+	dbConn, err := gorm.Open(sqlite.Open(constant.DBPATH), &gorm.Config{})
+	if err != nil {
+		fmt.Println("数据库连接失败")
+	}
+	// 创建books数据
+	// books := []*books{
+	// 	{Title: "英语书", Author: "小王", Price: 12.5},
+	// 	{Title: "历史书", Author: "小李", Price: 52.5},
+	// 	{Title: "小说书", Author: "小白", Price: 65.5},
+	// 	{Title: "数学书", Author: "小刘", Price: 30},
+	// }
+	// dbConn.Debug().Create(&books)
+
+	// 编写Go代码，使用Sqlx执行一个复杂的查询，例如查询价格大于 50 元的书籍，
+	// 并将结果映射到 Book 结构体切片中，确保类型安全。
+	bookList := []Book{}
+	dbConn.Debug().Raw("select id,title,author,price from books where price>?", 50).Scan(&bookList)
+	fmt.Println("查询价格大于 50 元的书籍: ", bookList)
+}
