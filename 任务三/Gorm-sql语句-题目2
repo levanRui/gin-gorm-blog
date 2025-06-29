@@ -1,0 +1,70 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/learn/samle-go/gorm/connectDb"
+	"github.com/learn/samle-go/gorm/constant"
+	"gorm.io/gorm"
+)
+
+/**
+编写一个事务，实现从账户 A 向账户 B 转账 100 元的操作。
+在事务中，需要先检查账户 A 的余额是否足够，如果足够则从账户 A 扣除 100 元，
+向账户 B 增加 100 元，并在 transactions 表中记录该笔转账信息。如果余额不足，
+则回滚事务。
+*/
+// accounts表
+type accounts struct {
+	ID      uint    `gorm:"primaryKey"`
+	Balance float32 `gorm:"column:balance"`
+}
+
+// transactions 表
+type transactions struct {
+	ID            uint    `gorm:"primaryKey"`
+	FromAccountID uint    `gorm:"column:from_account_id"`
+	ToAccountID   uint    `gorm:"column:to_account_id"`
+	Amount        float64 `gorm:"column:amount"`
+}
+
+// 转账
+func (tran *transactions) transferMoney(dbConn *gorm.DB) {
+	//转账
+	//1.A账户余额减少100
+	dbConn.Debug().Model(&accounts{}).Where("ID=? ", 15).Update("balance", 300.0)
+	//2.B账户余额增加100
+	dbConn.Debug().Model(&accounts{}).Where("ID=? ", 16).Update("balance", 200)
+	//3.在 transactions 表中记录该笔转账信息
+	dbConn.Debug().Create(&tran)
+}
+func main() {
+	// 初始化数据库
+	dbConn := connectDb.InitDB(constant.DBPATH, &accounts{}, &transactions{})
+	//dsn := "root:root@tcp(127.0.0.1:3306)/gorm?charset=utf8mb4&parseTime=True&loc=Local"
+	//dbConn, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	// 1.账户表插入数据
+	//accountA := accounts{Balance: 90.0}
+	//accountB := accounts{Balance: 100.0}
+	//dbConn.Debug().Create(&accountA)
+	//dbConn.Debug().Create(&accountB)
+	accountA := accounts{}
+	dbConn.Debug().Where("ID", 15).Find(&accountA)
+	// 事务处理
+	dbConn.Transaction(func(tx *gorm.DB) error {
+		// 在事务中执行一些db操作
+		amountA := accountA.Balance
+		if amountA >= 100 {
+			//转账
+			transactions := transactions{FromAccountID: 15, ToAccountID: 16, Amount: 100}
+			transactions.transferMoney(dbConn)
+		} else {
+			fmt.Println("事务开始回滚...")
+			return errors.New("rollback")
+		}
+		// 返回nil提交事务
+		return nil
+	})
+
+}
