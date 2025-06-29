@@ -1,0 +1,48 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/learn/samle-go/gorm/connectDb"
+	"github.com/learn/samle-go/gorm/constant"
+)
+
+type employees struct {
+	ID         uint    `gorm:"primaryKey"`
+	Name       string  `gorm:"column:name"`
+	Department string  `gorm:"column:department"`
+	Salary     float64 `gorm:"column:salary"`
+}
+type Employee struct {
+	ID         uint    `gorm:"primaryKey"`
+	Name       string  `gorm:"column:name"`
+	Department string  `gorm:"column:department"`
+	Salary     float64 `gorm:"column:salary"`
+}
+
+func main() {
+	// 初始化数据库
+	dbConn := connectDb.InitDB(constant.DBPATH, &employees{})
+
+	// 插入数据employees
+	// employees := []*employees{
+	// 	{Name: "张三", Department: "研发部", Salary: 4500},
+	// 	{Name: "李四", Department: "技术部", Salary: 4800},
+	// 	{Name: "马武", Department: "测试部", Salary: 5000},
+	// 	{Name: "胡名", Department: "技术部", Salary: 6500},
+	// }
+	// dbConn.Debug().Create(&employees)
+
+	//1.编写Go代码，使用Sqlx查询 employees 表中所有部门为 "技术部" 的员工信息，
+	// 并将结果映射到一个自定义的 Employee 结构体切片中。
+	employees := []Employee{}
+	dbConn.Debug().Where("department =?", "技术部").Find(&employees)
+	fmt.Println("技术部的所有员工信息：", employees)
+
+	//2.编写Go代码，使用Sqlx查询 employees 表中工资最高的员工信息，
+	// 并将结果映射到一个 Employee 结构体中。
+	employee := Employee{}
+	dbConn.Debug().Order("salary DESC").Limit(1).First(&employee)
+	fmt.Println("employees 表中工资最高的员工信息:", employee)
+
+}
