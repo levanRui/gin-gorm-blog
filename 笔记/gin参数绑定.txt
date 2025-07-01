@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"net/http"
@@ -85,6 +86,27 @@ func main() {
 		}
 		c.JSON(http.StatusOK, user)
 	})
-	router.Run(":8080")
 
+	// 中间件--使用
+	router.GET("/testMiddleWare", mw1(), mw2(), func(c *gin.Context) {
+		fmt.Println("testMiddleWare执行------self")
+		c.String(http.StatusOK, "testMiddleWare执行-----")
+	})
+	router.Run(":8080")
+}
+func mw1() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		fmt.Println("mw1执行------before")
+		c.String(http.StatusOK, "mw1执行-----")
+		c.Next()
+		fmt.Println("mw1执行------after")
+	}
+}
+func mw2() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		fmt.Println("mw2执行------before")
+		c.String(http.StatusOK, "mw2执行----")
+		c.Next()
+		fmt.Println("mw2执行------after")
+	}
 }
