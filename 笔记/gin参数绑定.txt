@@ -1,0 +1,90 @@
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"net/http"
+)
+
+type User struct {
+	Username string `json:"u" uri:"u" form:"u"`
+	Password string `json:"p" uri:"p" form:"p"`
+}
+type User2 struct {
+	Sex    string `json:"sex"`
+	Height string `json:"height"`
+}
+
+func main() {
+	router := gin.Default()
+	// 参数绑定
+	//2.非绑定获取
+	//127.0.0.1:8080/user/111/222
+	router.GET("/user/:u/:p", func(c *gin.Context) {
+		user := c.Param("u")
+		password := c.Param("p")
+		c.JSON(http.StatusOK, gin.H{
+			"user":     user,
+			"password": password,
+		})
+	})
+	//127.0.0.1:8080/user?u=1&p=3
+	router.GET("/user", func(c *gin.Context) {
+		user := c.Query("u")
+		password := c.Query("p")
+		c.JSON(http.StatusOK, gin.H{
+			"user":     user,
+			"password": password,
+		})
+	})
+	// 127.0.0.1:8080/form   POST表单方式
+	router.POST("/form", func(c *gin.Context) {
+		user := c.PostForm("u")
+		password := c.PostForm("p")
+		c.JSON(http.StatusOK, gin.H{
+			"user":     user,
+			"password": password,
+		})
+	})
+	// 127.0.0.1:8080/moreParam/111/222   uri:"u"  uri:"p"
+	router.POST("/moreParam/:u/:p", func(c *gin.Context) {
+		user := &User{}
+		err := c.ShouldBindUri(user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, user)
+	})
+	// 127.0.0.1:8080/common?u=4&p=3  form:"u" form:"p" json:"u" json:"p"都可以用
+	router.POST("/common", func(c *gin.Context) {
+		user := &User{}
+		err := c.ShouldBind(user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, user)
+	})
+
+	//多次绑定
+	// 127.0.0.1:8080/common?u=4&p=3 json:"u" json:"p"
+	router.POST("/userList", func(c *gin.Context) {
+		user := &User{}
+		err := c.ShouldBindBodyWith(user, binding.JSON)
+		//err := c.ShouldBindHeader(user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, user)
+	})
+	router.Run(":8080")
+
+}
