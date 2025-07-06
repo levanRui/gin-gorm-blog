@@ -1,0 +1,111 @@
+package main
+
+import (
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+type User struct {
+	gorm.Model
+	UserName  string `gorm:"column:userName"`
+	PostCount int    `gorm:"column:postCount"`
+	Posts     []Post `gorm:"foreignKey:UserReferID"`
+}
+type Post struct {
+	gorm.Model
+	Title         string    `gorm:"column:userName"`
+	Content       string    `gorm:"column:content"`
+	UserReferID   uint      // 关联User
+	CommentStatus int       `gorm:"column:commentStatus"`
+	Comments      []Comment `gorm:"foreignKey:PostReferID"`
+}
+type Comment struct {
+	gorm.Model
+	Content     string `gorm:"column:content"`
+	PostReferID uint   // 关联Post
+}
+
+func (c *Comment) BeforeCreate(tx *gorm.DB) (error error) {
+	var post Post
+	err := tx.Debug().Where("ID = ?", c.PostReferID).Find(&post).Error
+	if err != nil {
+		return err
+	}
+	// 更新文章评论状态为已评论
+	post.CommentStatus = 1
+	err2 := tx.Debug().Save(&post).Error
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+
+// AfterCreate Post 模型添加一个钩子函数，在文章创建时自动更新用户的文章数量统计字段。
+func (p *Post) AfterCreate(tx *gorm.DB) (error error) {
+	var user User
+	err := tx.Debug().Where("ID = ?", p.UserReferID).Find(&user).Error
+	if err != nil {
+		return err
+	}
+	currentCount := user.PostCount
+	err2 := tx.Debug().Model(&User{}).Where("ID = ?", p.UserReferID).Update("postCount", currentCount+1).Error
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+
+// AfterDelete Comment 模型添加一个钩子函数，在评论删除时检查文章的评论数量，如果评论数量为 0，则更新文章的评论状态为 "无评论"。
+func (c *Comment) AfterDelete(tx *gorm.DB) (error error) {
+	var post Post
+	err := tx.Debug().Model(&Post{}).Where("ID = ?", c.PostReferID).Find(&post).Error
+	if err != nil {
+		return err
+	}
+	// 计算文章的评论数量
+	var commentCount int64
+	tx.Debug().Model(&Comment{}).Where("ID = ?", c.PostReferID).Count(&commentCount)
+	// 如果评论数为0,更新文章状态(commentStatus)为0
+	if commentCount == 0 {
+		post.CommentStatus = 0
+		err2 := tx.Debug().Save(&post).Error
+		if err2 != nil {
+			return err2
+		}
+	}
+	return nil
+}
+
+func main() {
+	dsn := "root:root@tcp(127.0.0.1:3306)/gorm?charset=utf8mb4&parseTime=True&loc=Local"
+	dbConn, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	// 初始化数据库
+	// 注册钩子
+	//dbConn.Callback().Create().After("gorm:create").Register("post:after_create", (*Post))
+	dbConn.AutoMigrate(&User{}, &Post{}, &Comment{})
+	// 创建数据和删除数据后调用钩子函数
+	// 1.创建数据：触发Post.afterCreate
+	userList := []*User{
+		{UserName: "张三"},
+		{UserName: "李四"},
+		{UserName: "马五"},
+	}
+	dbConn.Debug().Create(&userList)
+	postList := []*Post{
+		{Content: "散文", UserReferID: 1},
+		{Content: "小说", UserReferID: 1},
+		{Content: "论文", UserReferID: 2},
+		{Content: "视频", UserReferID: 3},
+	}
+	dbConn.Debug().Create(&postList)
+
+	CommentList := []*Comment{
+		{Content: "散文评论1111", PostReferID: 1},
+		{Content: "散文评论2222", PostReferID: 1},
+		{Content: "论文111", PostReferID: 2},
+		{Content: "视频1111", PostReferID: 3},
+		{Content: "视频2222", PostReferID: 3},
+	}
+	dbConn.Debug().Create(&CommentList)
+	// 2.删除评论：触发Comment.afterDelete
+}
